@@ -1,7 +1,7 @@
 extends KinematicBody2D
 var velocity := Vector2.ZERO
 export var speed = 300
-var strength = 100
+export var strength = 200
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -12,10 +12,20 @@ func _physics_process(delta):
 	var direction = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	velocity = direction*speed
 	
-	velocity = move_and_slide(velocity)
+	move_and_slide(velocity)
 	
 	for i in get_slide_count():
 		var collision = get_slide_collision(i)
-		if collision.collider is KinematicBody2D:
-			pass
+		var collider = collision.collider
+		if collider is KinematicBody2D:
+			# Dot product will determine movement direction aligning with the collision direction:
+			var aligned_push = -direction.dot(collision.normal)
+#			print(aligned_push)
+			
+			var net_push = aligned_push*strength - collider.strength
+			net_push = max(net_push, 0)  # if net push negative, treat as zero
+			print("Push: ", net_push)
+			var push_velocity = -collision.normal*net_push
+			collider.move_and_slide(push_velocity)
+			collider.pushed = true
 		
